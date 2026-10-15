@@ -1,0 +1,189 @@
+// Small API client for the ClinicBook Django backend.
+// - stores the JWT tokens in localStorage
+// - sends the access token on protected calls
+// - on a 401, refreshes the access token once and retries
+// - turns every backend error ({error, code, details}) into an ApiError
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1";
+
+const ACCESS_KEY = "clinicbook_access";
+const REFRESH_KEY = "clinicbook_refresh";
+
+/* ---------------------------- token storage ---------------------------- */
+
+const canUseStorage = () => typeof window !== "undefined";
+
+export function getAccessToken() {
+  return canUseStorage() ? localStorage.getItem(ACCESS_KEY) : null;
+}
+
+export function getRefreshToken() {
+  return canUseStorage() ? localStorage.getItem(REFRESH_KEY) : null;
+}
+
+export function saveTokens({ access, refresh }) {
+  if (!canUseStorage()) return;
+  if (access) localStorage.setItem(ACCESS_KEY, access);
+  if (refresh) localStorage.setItem(REFRESH_KEY, refresh);
+}
+
+export function clearTokens() {
+  if (!canUseStorage()) return;
+  localStorage.removeItem(ACCESS_KEY);
+  localStorage.removeItem(REFRESH_KEY);
+}
+
+export function isLoggedIn() {
+  return Boolean(getAccessToken() || getRefreshToken());
+}
+
+/* ------------------------------- errors -------------------------------- */
+
+export class ApiError extends Error {
+  constructor(message, { code = "error", status = 0, details = null } = {}) {
+    super(message);
+    this.name = "ApiError";
+    this.code = code; // e.g. "invalid_credentials", "validation_error"
+    this.status = status; // HTTP status
+    this.details = details; // per-field messages for validation errors
+  }
+}
+
+/** First error message for a form field, or undefined. */
+export function fieldError(error, field) {
+  const messages = error?.details?.[field];
+  if (!messages) return undefined;
+  return Array.isArray(messages) ? messages[0] : String(messages);
+}
+
+/* ------------------------------ core fetch ----------------------------- */
+
+async function readJson(response) {
+  try {
+    return await response.json();
+  } catch {
+    return null; // empty body (e.g. 205) or not JSON
+  }
+}
+
+let refreshInFlight = null;
+
+// Several requests may get a 401 at the same time. Refresh tokens rotate
+// (each one works once), so they must all share ONE refresh call.
+function refreshAccessToken() {
+  if (!refreshInFlight) {
+    refreshInFlight = (async () => {
+      const refresh = getRefreshToken();
+      if (!refresh) throw new ApiError("Please log in again.", { code: "no_refresh", status: 401 });
+
+      const response = await fetch(`${API_URL}/auth/token/refresh/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh }),
+      });
+      const data = await readJson(response);
+
+      if (!response.ok) {
+        clearTokens();
+        throw new ApiError("Your session expired. Please log in again.", {
+          code: "session_expired",
+          status: 401,
+        });
+      }
+      saveTokens(data); // new access (+ rotated refresh)
+      return data.access;
+    })().finally(() => {
+      refreshInFlight = null;
+    });
+  }
+  return refreshInFlight;
+}
+
+async function request(path, { method = "GET", body, auth = false } = {}) {
+  const send = (accessToken) =>
+    fetch(`${API_URL}${path}`, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+
+  let response;
+  try {
+    response = await send(auth ? getAccessToken() : null);
+
+    if (response.status === 401 && auth && getRefreshToken()) {
+      const newAccess = await refreshAccessToken();
+      response = await send(newAccess);
+    }
+  } catch (err) {
+    if (err instanceof ApiError) throw err;
+    throw new ApiError("Cannot reach the server. Is the backend running?", {
+      code: "network_error",
+    });
+  }
+
+  const data = await readJson(response);
+
+  if (!response.ok) {
+    throw new ApiError(data?.error || "Something went wrong.", {
+      code: data?.code,
+      status: response.status,
+      details: data?.details,
+    });
+  }
+  return data;
+}
+
+/* ------------------------------ endpoints ------------------------------ */
+
+/**
+ * "New user" form. Creates the patient and the backend emails a verification
+ * link. The user is NOT signed in until they verify and log in.
+ * Resolves to { message, email, email_sent }.
+ */
+export async function registerPatient(form) {
+  return request("/auth/register/", { method: "POST", body: form });
+}
+
+/** Called by /verify-email with the uid + token from the emailed link. */
+export function verifyEmail(uid, token) {
+  return request("/auth/verify-email/", { method: "POST", body: { uid, token } });
+}
+
+/** Sends a fresh verification email (always succeeds from the UI's view). */
+export function resendVerification(email) {
+  return request("/auth/resend-verification/", { method: "POST", body: { email } });
+}
+
+/** Login page. `identifier` is the email or the phone number. */
+export async function login(identifier, password) {
+  const data = await request("/auth/login/", {
+    method: "POST",
+    body: { identifier, password },
+  });
+  saveTokens(data);
+  return data.user;
+}
+
+/** Blacklists the refresh token on the server, then forgets both tokens. */
+export async function logout() {
+  const refresh = getRefreshToken();
+  try {
+    if (refresh) {
+      await request("/auth/logout/", { method: "POST", body: { refresh }, auth: true });
+    }
+  } catch {
+    // Even if the server call fails, the user must end up logged out locally.
+  } finally {
+    clearTokens();
+  }
+}
+
+/** Patient dashboard data (patients only). */
+export function getPatientDashboard() {
+  return request("/patients/dashboard/", { auth: true });
+}
