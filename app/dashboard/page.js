@@ -1,27 +1,22 @@
 "use client";
 
-// EXAMPLE: how to use the loaders on a data page. Adapt to your real dashboard.
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-import { InlineLoader, PageLoader } from "@/components/Loader";
-import { getPatientDashboard } from "../lib/api";
+import { clearTokens, getSavedRole, homeFor } from "../lib/api";
 
-export default function DashboardPage() {
-  const [data, setData] = useState(null);
-  const [error, setError] = useState(null);
+// /dashboard has no content of its own: send people to their role's portal.
+export default function DashboardIndex() {
+  const router = useRouter();
 
   useEffect(() => {
-    getPatientDashboard().then(setData).catch(setError);
-  }, []);
+    const home = homeFor(getSavedRole());
+    if (home) router.replace(home);
+    else {
+      clearTokens(); // signed in but no usable role: start fresh
+      router.replace("/login");
+    }
+  }, [router]);
 
-  if (error) return <p role="alert" className="p-6 text-red-700">{error.message}</p>;
-  if (!data) return <PageLoader label="Loading your dashboard..." />;
-
-  return (
-    <main className="p-6">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
-      {/* For a single section that loads on its own: */}
-      {/* {loadingAppointments ? <InlineLoader label="Loading appointments..." /> : <List />} */}
-    </main>
-  );
+  return null;
 }

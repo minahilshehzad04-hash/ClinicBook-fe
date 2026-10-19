@@ -9,6 +9,7 @@ const API_URL =
 
 const ACCESS_KEY = "clinicbook_access";
 const REFRESH_KEY = "clinicbook_refresh";
+const ROLE_KEY = "clinicbook_role";
 
 /* ---------------------------- token storage ---------------------------- */
 
@@ -32,10 +33,34 @@ export function clearTokens() {
   if (!canUseStorage()) return;
   localStorage.removeItem(ACCESS_KEY);
   localStorage.removeItem(REFRESH_KEY);
+  localStorage.removeItem(ROLE_KEY);
 }
 
 export function isLoggedIn() {
   return Boolean(getAccessToken() || getRefreshToken());
+}
+
+/* --------------------------- role & redirects --------------------------- */
+
+// Where each role lands after logging in. Admin has no frontend page yet:
+// the admin signs in at the backend /admin/ site.
+const ROLE_HOME = {
+  patient: "/dashboard/patient",
+  doctor: "/dashboard/doctor",
+  // admin: intentionally absent -> uses backend /admin/
+};
+
+/** Frontend home page for a role, or undefined if the role has none. */
+export function homeFor(role) {
+  return ROLE_HOME[role] || null;
+}
+
+export function getSavedRole() {
+  return canUseStorage() ? localStorage.getItem(ROLE_KEY) : null;
+}
+
+export function saveRole(role) {
+  if (canUseStorage() && role) localStorage.setItem(ROLE_KEY, role);
 }
 
 /* ------------------------------- errors -------------------------------- */
@@ -140,11 +165,7 @@ async function request(path, { method = "GET", body, auth = false } = {}) {
 
 /* ------------------------------ endpoints ------------------------------ */
 
-/**
- * "New user" form. Creates the patient and the backend emails a verification
- * link. The user is NOT signed in until they verify and log in.
- * Resolves to { message, email, email_sent }.
- */
+/** "New user" form. Creates the account; a verification email is sent. */
 export async function registerPatient(form) {
   return request("/auth/register/", { method: "POST", body: form });
 }
@@ -166,6 +187,7 @@ export async function login(identifier, password) {
     body: { identifier, password },
   });
   saveTokens(data);
+  saveRole(data.user?.role);
   return data.user;
 }
 
@@ -184,6 +206,13 @@ export async function logout() {
 }
 
 /** Patient dashboard data (patients only). */
-export function getPatientDashboard() {
-  return request("/patients/dashboard/", { auth: true });
-}
+export const getPatientDashboard = () => request("/patients/dashboard/", { auth: true });
+export const getDoctorDashboard = () => request("/doctors/dashboard/", { auth: true });
+
+/** Edit the signed-in user's own profile. */
+export const updateMyProfile = (form) =>
+  request("/auth/me/", { method: "PATCH", body: form, auth: true });
+
+/** Doctor: update personal + professional details in one request. */
+export const updateDoctorProfile = (form) =>
+  request("/doctors/me/", { method: "PATCH", body: form, auth: true });

@@ -2,15 +2,20 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import AuthButton from "@/components/AuthButton";
 import AuthShell from "@/components/AuthShell";
 import Field from "@/components/Field";
-import { PageLoader } from "@/components/Loader";
-import { fieldError, isLoggedIn, registerPatient } from "../lib/api";
+import { clearTokens, fieldError, registerPatient } from "../lib/api";
+
+const ROLES = [
+  { value: "patient", label: "Patient" },
+  { value: "doctor", label: "Doctor" },
+];
 
 const EMPTY_FORM = {
+  role: "patient",
   first_name: "",
   last_name: "",
   email: "",
@@ -20,19 +25,21 @@ const EMPTY_FORM = {
   confirm_password: "",
 };
 
+// Fields that have their own input on this page. Errors for any OTHER field
+// (e.g. "username") are shown in a banner so they are never invisible.
+const SHOWN_FIELDS = [
+  "first_name", "last_name", "email", "phone", "date_of_birth",
+  "password", "confirm_password", "non_field_errors",
+];
+
 export default function RegisterPage() {
   const router = useRouter();
   const [form, setForm] = useState(EMPTY_FORM);
   const [agreed, setAgreed] = useState(false);
   const [termsError, setTermsError] = useState(false);
+  const [localErrors, setLocalErrors] = useState({}); // checked in the browser
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [checking, setChecking] = useState(true); // are we already logged in?
-
-  useEffect(() => {
-    if (isLoggedIn()) router.replace("/dashboard");
-    else setChecking(false);
-  }, [router]);
 
   const update = (event) =>
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
@@ -40,30 +47,68 @@ export default function RegisterPage() {
   async function handleSubmit(event) {
     event.preventDefault();
     setError(null);
-    if (!agreed) {
-      setTermsError(true);
-      return;
+
+    // The backend does not compare the two password boxes, so check here.
+    const problems = {};
+    if (form.password !== form.confirm_password) {
+      problems.confirm_password = "Passwords do not match.";
     }
-    setTermsError(false);
+    setLocalErrors(problems);
+    if (!agreed) setTermsError(true);
+    else setTermsError(false);
+    if (Object.keys(problems).length || !agreed) return;
+
     setLoading(true);
     try {
-      await registerPatient(form); // creates the account + emails a verification link
-      router.push(`/check-email?email=${encodeURIComponent(form.email.trim())}`);
+      const email = form.email.trim().toLowerCase();
+      // The backend requires a username; patients log in with email/phone,
+      // so the email doubles as the username.
+      await registerPatient({ ...form, email, username: email });
+      clearTokens();
+      router.push(`/check-email?email=${encodeURIComponent(email)}`);
     } catch (err) {
       setError(err);
       setLoading(false);
     }
   }
 
-  if (checking) return <PageLoader label="Just a moment..." />;
-
   const isValidationError = error?.code === "validation_error";
-  const err = (name) => (isValidationError ? fieldError(error, name) : undefined);
+  const err = (name) =>
+    localErrors[name] || (isValidationError ? fieldError(error, name) : undefined);
   const generalError = isValidationError ? fieldError(error, "non_field_errors") : null;
+  const otherErrors = isValidationError
+    ? Object.keys(error.details || {})
+        .filter((key) => !SHOWN_FIELDS.includes(key))
+        .map((key) => fieldError(error, key))
+    : [];
 
   return (
     <AuthShell title="Sign up">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+        {/* Patient / Doctor choice. The backend accepts only these two roles. */}
+        <div>
+          <p className="mb-1 text-sm text-slate-700">I am a</p>
+          <div role="radiogroup" aria-label="I am a" className="grid grid-cols-2 gap-1 rounded-lg bg-slate-200 p-1">
+            {ROLES.map((r) => {
+              const active = form.role === r.value;
+              return (
+                <button
+                  key={r.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setForm((current) => ({ ...current, role: r.value }))}
+                  className={`rounded-md py-2.5 text-sm font-medium transition ${
+                    active ? "bg-black text-white" : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  {r.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="flex gap-3">
           <Field label="First name" name="first_name" className="flex-1" autoComplete="given-name"
             value={form.first_name} onChange={update} error={err("first_name")} />
@@ -113,6 +158,11 @@ export default function RegisterPage() {
             {generalError}
           </p>
         )}
+        {otherErrors.map((message, i) => (
+          <p key={i} role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+            {message}
+          </p>
+        ))}
 
         <div className="mt-2">
           <AuthButton loading={loading} loadingText="Creating account...">

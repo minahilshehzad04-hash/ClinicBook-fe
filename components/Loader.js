@@ -1,4 +1,4 @@
-import { LogoMark } from "@/components/Logo";
+import { LogoMark } from "./Logo";
 
 /**
  * Small spinning ring. Inherits the text color (currentColor), so it works
