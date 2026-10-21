@@ -43,8 +43,10 @@ export default function DashboardShell({
             >
               <NavIcon name="menu" />
             </button>
-            <Logo size="sm" href={`/dashboard/${user?.role ?? ""}`} />
-            <p className="hidden text-sm text-slate-500 xl:block">
+            <div className="lg:hidden">
+              <Logo size="sm" href={`/dashboard/${user?.role ?? ""}`} />
+            </div>
+            <p className="hidden text-sm text-slate-500 lg:block">
               Welcome back{user?.first_name ? `, ${user.first_name}` : ""}
             </p>
           </div>
