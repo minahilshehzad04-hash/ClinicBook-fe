@@ -41,15 +41,11 @@ function DoctorProfileContent() {
           }}
         />
       ) : (
-        <div className="space-y-4">
-          <button
-            onClick={() => setEditing(true)}
-            className="rounded-xl bg-teal-800 px-4 py-2 text-sm font-medium text-white"
-          >
-            Update profile
-          </button>
-          <ProfileCard user={data.doctor} profile={data.profile} />
-        </div>
+        <ProfileCard
+          user={data.doctor}
+          profile={data.profile}
+          onEdit={() => setEditing(true)}
+        />
       )}
     </DashboardShell>
   );

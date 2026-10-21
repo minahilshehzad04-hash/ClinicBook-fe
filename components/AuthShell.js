@@ -15,7 +15,7 @@ export default function AuthShell({ title, children }) {
         <Logo />
       </header>
 
-      <main className="mx-auto grid w-full max-w-6xl flex-1 items-center gap-12 px-5 py-10 lg:grid-cols-[1.15fr_1fr] lg:gap-24 lg:py-16">
+      <main className="mx-auto grid w-full max-w-7xl flex-1 items-center gap-12 px-5 py-10 lg:grid-cols-[1.15fr_1fr] lg:gap-24 lg:px-8 lg:py-16">
         <section>
           <h1 className="text-4xl font-medium leading-tight text-slate-900 sm:text-5xl">
             Over <span className="text-teal-800">10,000 patients</span> book
