@@ -12,7 +12,7 @@ const hintFor = (a) => {
   return "";
 };
 
-export default function MyAppointments({ appointments }) {
+export default function MyAppointments({ appointments, compact = false }) {
   const [tab, setTab] = useState("upcoming");
 
   const asc = [...appointments].sort((x, y) => new Date(x.start) - new Date(y.start));
@@ -29,7 +29,7 @@ export default function MyAppointments({ appointments }) {
   const list = groups[tab];
 
    return (
-  <div className="grid gap-6">
+  <div className={`grid ${compact ? "gap-4" : "gap-6"}`}>
     <StatCards appointments={appointments} />
 
     <SectionCard title="My appointments">

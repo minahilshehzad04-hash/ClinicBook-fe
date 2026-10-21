@@ -9,7 +9,15 @@ import NavIcon from "./NavIcon";
 import Sidebar from "./Sidebar";
 
 // Page frame shared by every dashboard: sidebar + top bar + title.
-export default function DashboardShell({ user, title, subtitle, onLogout, children }) {
+export default function DashboardShell({
+  user,
+  title,
+  subtitle,
+  headerAction,
+  compactContent = false,
+  onLogout,
+  children,
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
   const links = NAV_LINKS[user?.role] ?? [];
 
@@ -48,10 +56,19 @@ export default function DashboardShell({ user, title, subtitle, onLogout, childr
           </Link>
         </header>
 
-        <main className="mx-auto max-w-5xl px-4 py-8 lg:px-8">
-          <h1 className="text-2xl font-semibold text-slate-900">{title}</h1>
-          {subtitle && <p className="mt-1 text-slate-600">{subtitle}</p>}
-          <div className="mt-6 space-y-6">{children}</div>
+        <main
+          className="mx-auto max-w-7xl px-4 py-8 lg:px-6"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-semibold text-slate-900">{title}</h1>
+              {subtitle && <p className="mt-1 text-slate-600">{subtitle}</p>}
+            </div>
+            {headerAction}
+          </div>
+          <div className={compactContent ? "mt-4 space-y-4" : "mt-6 space-y-6"}>
+            {children}
+          </div>
         </main>
       </div>
     </div>

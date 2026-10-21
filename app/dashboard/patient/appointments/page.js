@@ -23,18 +23,18 @@ export default function PatientAppointmentsPage() {
       user={data.patient}
       title="Appointments"
       subtitle="Your upcoming and past visits."
+      compactContent
+      headerAction={
+        <Link
+          href="/dashboard/patient/doctors"
+          className="rounded-xl bg-teal-800 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-teal-900"
+        >
+          Book new appointment
+        </Link>
+      }
       onLogout={handleLogout}
     >
-      <div className="flex justify-end">
-        <Link
-        href="/dashboard/patient/doctors"
-        style={{ color: "#fff" }}
-        className="rounded-xl bg-teal-800 px-5 py-2.5 text-sm font-medium shadow-sm transition hover:bg-teal-900"
-        >
-        Book new appointment
-        </Link>
-      </div>
-      <MyAppointments appointments={data.appointments} />
+      <MyAppointments appointments={data.appointments} compact />
     </DashboardShell>
   );
 }
