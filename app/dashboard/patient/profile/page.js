@@ -40,15 +40,7 @@ function PatientProfileContent() {
           }}
         />
       ) : (
-        <div className="space-y-4">
-          <button
-            onClick={() => setEditing(true)}
-            className="rounded-xl bg-teal-800 px-4 py-2 text-sm font-medium text-white"
-          >
-            Update profile
-          </button>
-          <ProfileCard user={data.patient} />
-        </div>
+        <ProfileCard user={data.patient} onEdit={() => setEditing(true)} />
       )}
     </DashboardShell>
   );

@@ -49,7 +49,7 @@ function Card({ title, children }) {
 }
 
 // Full details of the signed-in user. `profile` is passed for doctors only.
-export default function ProfileCard({ user, profile }) {
+export default function ProfileCard({ user, profile, onEdit }) {
   if (!user) return null;
 
   return (
@@ -58,26 +58,39 @@ export default function ProfileCard({ user, profile }) {
         <div className="absolute -right-12 -top-12 h-48 w-48 rounded-full bg-white/10" />
         <div className="absolute -bottom-16 right-28 h-40 w-40 rounded-full bg-white/10" />
 
-        <div className="relative flex flex-col items-start gap-5 sm:flex-row sm:items-center">
-          <span className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-white/15 text-3xl font-semibold ring-4 ring-white/30">
-            {getInitials(user)}
-          </span>
+        <div className="relative flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-5">
+            <span className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-white/15 text-3xl font-semibold ring-4 ring-white/30">
+              {getInitials(user)}
+            </span>
 
-          <div className="min-w-0">
-            <h2 className="truncate text-2xl font-semibold sm:text-3xl">
-              {getFullName(user) || user.email}
-            </h2>
-            <div className="mt-2 flex flex-wrap items-center gap-3">
-              <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-medium capitalize">
-                {user.role}
-              </span>
-              {profile?.specialty && (
-                <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-medium">
-                  {profile.specialty}
+            <div className="min-w-0">
+              <h2 className="truncate text-2xl font-semibold sm:text-3xl">
+                {getFullName(user) || user.email}
+              </h2>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-medium capitalize">
+                  {user.role}
                 </span>
-              )}
+                {profile?.specialty && (
+                  <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-medium">
+                    {profile.specialty}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
+
+          {onEdit && (
+            <button
+              type="button"
+              onClick={onEdit}
+              className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-3 py-2 text-sm font-medium text-white transition hover:bg-white/20"
+            >
+              <NavIcon name="edit" className="h-4 w-4" />
+              Update profile
+            </button>
+          )}
         </div>
       </section>
 
