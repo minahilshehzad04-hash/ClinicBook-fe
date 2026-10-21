@@ -35,8 +35,6 @@ const SHOWN_FIELDS = [
 export default function RegisterPage() {
   const router = useRouter();
   const [form, setForm] = useState(EMPTY_FORM);
-  const [agreed, setAgreed] = useState(false);
-  const [termsError, setTermsError] = useState(false);
   const [localErrors, setLocalErrors] = useState({}); // checked in the browser
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -54,9 +52,7 @@ export default function RegisterPage() {
       problems.confirm_password = "Passwords do not match.";
     }
     setLocalErrors(problems);
-    if (!agreed) setTermsError(true);
-    else setTermsError(false);
-    if (Object.keys(problems).length || !agreed) return;
+    if (Object.keys(problems).length) return;
 
     setLoading(true);
     try {
@@ -128,25 +124,6 @@ export default function RegisterPage() {
         <Field label="Confirm password" name="confirm_password" type="password"
           autoComplete="new-password"
           value={form.confirm_password} onChange={update} error={err("confirm_password")} />
-
-        <div>
-          <label className="flex items-center gap-3 text-xs text-slate-700">
-            <input
-              type="checkbox"
-              checked={agreed}
-              onChange={(e) => setAgreed(e.target.checked)}
-              className="h-5 w-5 rounded border-slate-300 accent-teal-800"
-            />
-            <span>
-              I agree to ClinicBook&apos;s{" "}
-              <Link href="/terms" className="underline">Terms of Service</Link> and{" "}
-              <Link href="/privacy" className="underline">Privacy Policy</Link>
-            </span>
-          </label>
-          {termsError && (
-            <p className="mt-1 text-xs text-red-600">Please accept the terms to continue.</p>
-          )}
-        </div>
 
         {error && !isValidationError && (
           <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">

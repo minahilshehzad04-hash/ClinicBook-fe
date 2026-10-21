@@ -6,7 +6,12 @@ import Field from "@/components/Field";
 import { Spinner } from "@/components/Loader";
 import SectionCard from "./SectionCard";
 
-const hhmm = (t) => t.slice(0, 5);
+const formatTime = (time) => {
+  const [hours, minutes] = time.split(":").map(Number);
+  const period = hours >= 12 ? "PM" : "AM";
+  const hour = hours % 12 || 12;
+  return `${hour}:${String(minutes).padStart(2, "0")} ${period}`;
+};
 
 function DayCard({ day, onChanged }) {
   const [start, setStart] = useState("09:00");
@@ -29,7 +34,7 @@ function DayCard({ day, onChanged }) {
   }
 
   async function handleDelete(id) {
-    if (!window.confirm("Remove this time window?")) return;
+    if (!window.confirm("Remove this time slot?")) return;
     setError(null);
     try {
       await deleteScheduleWindow(id);
@@ -46,24 +51,26 @@ function DayCard({ day, onChanged }) {
       title={day.name}
       action={
         <span className="text-xs text-slate-500">
-          {day.slots.length ? `${day.slots.length} window(s)` : "Day off"}
+          {day.slots.length
+            ? `${day.slots.length} time slot${day.slots.length === 1 ? "" : "s"}`
+            : "Day off"}
         </span>
       }
-      emptyText="Day off. Add a window below."
+      emptyText="Day off. Add a time slot below."
     >
       {day.slots.length > 0 && (
         <ul className="mb-4 flex flex-wrap gap-2">
           {day.slots.map((s) => (
             <li
               key={s.id}
-              className="flex items-center gap-2 rounded-full bg-teal-50 px-3 py-1 text-sm font-medium text-teal-900"
+              className="flex min-h-14 items-center gap-3 rounded-full bg-teal-50 px-5 py-2 text-lg font-semibold text-teal-950"
             >
-              {hhmm(s.start_time)} - {hhmm(s.end_time)}
+              <span>{formatTime(s.start_time)} – {formatTime(s.end_time)}</span>
               <button
                 type="button"
                 onClick={() => handleDelete(s.id)}
-                aria-label={`Remove ${hhmm(s.start_time)} to ${hhmm(s.end_time)}`}
-                className="text-teal-700 hover:text-red-600"
+                aria-label={`Remove ${formatTime(s.start_time)} to ${formatTime(s.end_time)}`}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-xl text-teal-800 transition hover:bg-red-100 hover:text-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-800"
               >
                 &times;
               </button>
@@ -85,10 +92,10 @@ function DayCard({ day, onChanged }) {
         <button
           type="submit"
           disabled={busy}
-          className="inline-flex h-12 items-center justify-center gap-2 self-end rounded-lg bg-teal-800 px-5 text-sm font-medium text-white disabled:opacity-60"
+          className="inline-flex h-12 items-center justify-center gap-2 self-end rounded-lg bg-teal-800 px-4 text-sm font-semibold text-white transition hover:bg-teal-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {busy && <Spinner size="h-4 w-4" />}
-          {busy ? "Adding" : "Add"}
+          {busy ? "Adding..." : "Add time slot"}
         </button>
       </form>
 
@@ -100,7 +107,7 @@ function DayCard({ day, onChanged }) {
 export default function WeeklySchedule({ days, onChanged }) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      {days.map((day) => (
+      {[...days].sort((a, b) => a.weekday - b.weekday).map((day) => (
         <DayCard key={day.weekday} day={day} onChanged={onChanged} />
       ))}
     </div>

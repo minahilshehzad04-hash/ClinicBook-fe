@@ -18,7 +18,7 @@ export default function DoctorSchedulePage() {
     <DashboardShell
       user={data.doctor}
       title="My schedule"
-      subtitle="Set the hours you see patients each week. Days with no window are days off."
+      subtitle="Choose your usual patient hours for each day. Days without a time slot are days off."
       onLogout={handleLogout}
     >
       <WeeklySchedule days={data.days} onChanged={refetch} />

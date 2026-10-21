@@ -10,7 +10,7 @@ import NavIcon from "./NavIcon";
 // Reusable sidebar. Pass any list of links, so it works for every role.
 //   links:   [{ label, href, icon, exact? }]
 //   open:    mobile drawer state (desktop is always visible)
-export default function Sidebar({ links = [], user, onLogout, open = false, onClose }) {
+export default function Sidebar({ links = [], user, open = false, onClose }) {
     const pathname = usePathname();
 
     const isActive = (link) =>
@@ -66,7 +66,7 @@ export default function Sidebar({ links = [], user, onLogout, open = false, onCl
                     })}
                 </nav>
 
-                {/* User + logout */}
+                {/* Signed-in user */}
                 <div className="border-t border-slate-200 p-3">
                     <div className="flex items-center gap-3 px-2 py-2">
                         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-900 text-sm font-medium text-white">
@@ -79,14 +79,6 @@ export default function Sidebar({ links = [], user, onLogout, open = false, onCl
                             <p className="text-xs capitalize text-slate-500">{user?.role}</p>
                         </div>
                     </div>
-                    <button
-                        type="button"
-                        onClick={onLogout}
-                        className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-teal-700"
-                    >
-                        <NavIcon name="logout" />
-                        Log out
-                    </button>
                 </div>
             </aside>
         </>

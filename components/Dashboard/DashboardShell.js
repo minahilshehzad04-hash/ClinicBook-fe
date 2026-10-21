@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { NAV_LINKS } from "@/app/lib/navigation";
 import { getInitials } from "@/app/lib/user";
+import Logo from "@/components/Logo";
 import NavIcon from "./NavIcon";
 import Sidebar from "./Sidebar";
 
@@ -19,6 +20,7 @@ export default function DashboardShell({
   children,
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const links = NAV_LINKS[user?.role] ?? [];
 
   return (
@@ -26,34 +28,67 @@ export default function DashboardShell({
       <Sidebar
         links={links}
         user={user}
-        onLogout={onLogout}
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
       />
 
       <div className="lg:pl-64">
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 lg:px-8">
-          <button
-            type="button"
-            onClick={() => setMenuOpen(true)}
-            className="rounded-lg p-2 text-slate-700 hover:bg-slate-100 lg:hidden"
-            aria-label="Open menu"
-          >
-            <NavIcon name="menu" />
-          </button>
+          <div className="flex min-w-0 items-center gap-3 lg:gap-6">
+            <button
+              type="button"
+              onClick={() => setMenuOpen(true)}
+              className="rounded-lg p-2 text-slate-700 hover:bg-slate-100 lg:hidden"
+              aria-label="Open menu"
+            >
+              <NavIcon name="menu" />
+            </button>
+            <Logo size="sm" href={`/dashboard/${user?.role ?? ""}`} />
+            <p className="hidden text-sm text-slate-500 xl:block">
+              Welcome back{user?.first_name ? `, ${user.first_name}` : ""}
+            </p>
+          </div>
 
-          <p className="hidden text-sm text-slate-500 lg:block">
-            Welcome back{user?.first_name ? `, ${user.first_name}` : ""}
-          </p>
-
-          <Link
-            href={`/dashboard/${user?.role}/profile?edit=1`}
-            title="Edit profile"
-            aria-label="Edit profile"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-teal-900 text-xs font-medium text-white transition hover:ring-4 hover:ring-teal-200"
-          >
-            {getInitials(user)}
-          </Link>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setProfileMenuOpen((open) => !open)}
+              title="Open profile menu"
+              aria-label="Open profile menu"
+              aria-haspopup="menu"
+              aria-expanded={profileMenuOpen}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-900 text-xs font-medium text-white transition hover:ring-4 hover:ring-teal-200"
+            >
+              {getInitials(user)}
+            </button>
+            {profileMenuOpen && (
+              <div
+                role="menu"
+                className="absolute right-0 top-full z-50 mt-2 w-48 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg"
+              >
+                <Link
+                  href={`/dashboard/${user?.role}/profile?edit=1`}
+                  role="menuitem"
+                  onClick={() => setProfileMenuOpen(false)}
+                  className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  Edit profile
+                </Link>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setProfileMenuOpen(false);
+                    onLogout?.();
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-red-700 hover:bg-red-50"
+                >
+                  <NavIcon name="logout" className="h-4 w-4" />
+                  Sign out
+                </button>
+              </div>
+            )}
+          </div>
         </header>
 
         <main

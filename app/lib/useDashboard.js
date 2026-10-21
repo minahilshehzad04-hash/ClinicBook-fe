@@ -42,9 +42,10 @@ export function useDashboard(fetcher, role) {
     load();
   }, [router, role, load]);
 
-  async function handleLogout() {
-    await logout();
+  function handleLogout() {
+    const logoutRequest = logout();
     router.replace("/login");
+    return logoutRequest;
   }
 
   return { data, error, handleLogout, refetch: load };

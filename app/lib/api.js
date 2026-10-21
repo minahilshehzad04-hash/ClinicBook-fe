@@ -194,14 +194,15 @@ export async function login(identifier, password) {
 /** Blacklists the refresh token on the server, then forgets both tokens. */
 export async function logout() {
   const refresh = getRefreshToken();
+  const logoutRequest = refresh
+    ? request("/auth/logout/", { method: "POST", body: { refresh }, auth: true })
+    : null;
+  clearTokens();
+
   try {
-    if (refresh) {
-      await request("/auth/logout/", { method: "POST", body: { refresh }, auth: true });
-    }
+    if (logoutRequest) await logoutRequest;
   } catch {
     // Even if the server call fails, the user must end up logged out locally.
-  } finally {
-    clearTokens();
   }
 }
 

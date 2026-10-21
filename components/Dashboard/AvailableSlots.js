@@ -175,17 +175,19 @@ export default function AvailableSlots({ doctor, onBooked, onClose }) {
             type="button"
             onClick={() => setWeekOffset((w) => Math.max(0, w - 1))}
             disabled={weekOffset === 0 || loading}
-            className="h-9 rounded-lg border border-slate-300 px-3 text-sm disabled:opacity-50"
+            className="inline-flex h-10 items-center gap-2 rounded-full border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm transition hover:border-teal-700 hover:bg-teal-50 hover:text-teal-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400 disabled:shadow-none"
           >
+            <span aria-hidden="true" className="text-base leading-none">‹</span>
             Previous
           </button>
           <button
             type="button"
             onClick={() => setWeekOffset((w) => w + 1)}
             disabled={loading}
-            className="h-9 rounded-lg border border-slate-300 px-3 text-sm disabled:opacity-50"
+            className="inline-flex h-10 items-center gap-2 rounded-full border border-teal-800 bg-teal-800 px-4 text-sm font-semibold text-white shadow-sm transition hover:border-teal-900 hover:bg-teal-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
           >
             Next week
+            <span aria-hidden="true" className="text-base leading-none">›</span>
           </button>
         </div>
       </div>
