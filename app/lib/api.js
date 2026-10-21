@@ -216,3 +216,70 @@ export const updateMyProfile = (form) =>
 /** Doctor: update personal + professional details in one request. */
 export const updateDoctorProfile = (form) =>
   request("/doctors/me/", { method: "PATCH", body: form, auth: true });
+
+/** Doctor's weekly working windows, grouped by weekday. */
+/** Doctor's weekly working windows, grouped by weekday. */
+export const getSchedule = () => request("/doctors/schedule/", { auth: true });
+
+export const addScheduleWindow = (form) =>
+  request("/doctors/schedule/", { method: "POST", body: form, auth: true });
+
+export const deleteScheduleWindow = (id) =>
+  request(`/doctors/schedule/${id}/`, { method: "DELETE", auth: true });
+
+/** Dashboard (for the shell's user) + schedule in one call, so useDashboard can reuse it. */
+export async function getDoctorSchedulePage() {
+  const [dash, sched] = await Promise.all([getDoctorDashboard(), getSchedule()]);
+  return { ...dash, days: sched.days };
+}
+
+/** Patient side: doctors who have published availability. */
+export const getDoctors = () => request("/doctors/", { auth: true });
+
+/** Patient side: bookable slots for one doctor. */
+export const getDoctorSlots = (doctorId, { start, days = 7, duration = 30 } = {}) => {
+  const qs = new URLSearchParams({ days: String(days), duration: String(duration) });
+  if (start) qs.set("start", start);
+  return request(`/doctors/${doctorId}/slots/?${qs}`, { auth: true });
+};
+
+/** Dashboard (for the shell's user) + doctor list in one call, for useDashboard. */
+export async function getPatientDoctorsPage() {
+  const [dash, doctors] = await Promise.all([getPatientDashboard(), getDoctors()]);
+  return { ...dash, doctors };
+}
+
+/* ----------------------------- appointments ----------------------------- */
+// API_URL already ends with /api/v1 and request() already JSON-stringifies the body.
+
+export const bookAppointment = (body) =>
+  request("/doctors/schedule/appointments/", { method: "POST", body, auth: true });
+
+export const getMyAppointments = () =>
+  request("/doctors/schedule/appointments/", { auth: true });
+
+export const getDoctorInbox = () =>
+  request("/doctors/schedule/doctor/appointments/", { auth: true });
+
+export const respondToAppointment = (id, action) =>
+  request(`/doctors/schedule/doctor/appointments/${id}/respond/`, {
+    method: "PATCH",
+    body: { action }, // "accept" | "reject"
+    auth: true,
+  });
+
+export async function getPatientAppointmentsPage() {
+  const [base, appointments] = await Promise.all([
+    getPatientDoctorsPage(), // { patient, doctors }
+    getMyAppointments(),
+  ]);
+  return { ...base, appointments };
+}
+
+export async function getDoctorAppointmentsPage() {
+  const [dash, appointments] = await Promise.all([
+    getDoctorDashboard(), // { doctor, ... }
+    getDoctorInbox(),
+  ]);
+  return { ...dash, appointments };
+}
