@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { NAV_LINKS } from "@/app/lib/navigation";
 import { getInitials } from "@/app/lib/user";
@@ -21,7 +21,27 @@ export default function DashboardShell({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileRef = useRef(null);
   const links = NAV_LINKS[user?.role] ?? [];
+
+  // Close the profile menu on outside click or Escape
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+
+    const onClick = (e) => {
+      if (!profileRef.current?.contains(e.target)) setProfileMenuOpen(false);
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") setProfileMenuOpen(false);
+    };
+
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [profileMenuOpen]);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -46,12 +66,19 @@ export default function DashboardShell({
             <div className="lg:hidden">
               <Logo size="sm" href={`/dashboard/${user?.role ?? ""}`} />
             </div>
-            <p className="hidden text-sm text-slate-500 lg:block">
-              Welcome back{user?.first_name ? `, ${user.first_name}` : ""}
+            <p
+              suppressHydrationWarning
+              className="hidden text-sm text-slate-500 lg:block"
+            >
+              {new Date().toLocaleDateString(undefined, {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+              })}
             </p>
           </div>
 
-          <div className="relative">
+          <div className="relative" ref={profileRef}>
             <button
               type="button"
               onClick={() => setProfileMenuOpen((open) => !open)}
@@ -93,9 +120,7 @@ export default function DashboardShell({
           </div>
         </header>
 
-        <main
-          className="mx-auto max-w-7xl px-4 py-8 lg:px-6"
-        >
+        <main className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 className="text-2xl font-semibold text-slate-900">{title}</h1>

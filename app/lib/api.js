@@ -47,7 +47,7 @@ export function isLoggedIn() {
 const ROLE_HOME = {
   patient: "/dashboard/patient",
   doctor: "/dashboard/doctor",
-  // admin: intentionally absent -> uses backend /admin/
+  admin: "/dashboard/admin",
 };
 
 /** Frontend home page for a role, or undefined if the role has none. */
@@ -209,6 +209,16 @@ export async function logout() {
 /** Patient dashboard data (patients only). */
 export const getPatientDashboard = () => request("/patients/dashboard/", { auth: true });
 export const getDoctorDashboard = () => request("/doctors/dashboard/", { auth: true });
+export const getAdminDashboardPage = () => request("/admin/dashboard/", { auth: true });
+
+/** Patient overview data: profile plus the signed-in patient's appointments. */
+export async function getPatientDashboardPage() {
+  const [dashboard, appointments] = await Promise.all([
+    getPatientDashboard(),
+    getMyAppointments(),
+  ]);
+  return { ...dashboard, appointments };
+}
 
 /** Edit the signed-in user's own profile. */
 export const updateMyProfile = (form) =>
@@ -283,4 +293,13 @@ export async function getDoctorAppointmentsPage() {
     getDoctorInbox(),
   ]);
   return { ...dash, appointments };
+}
+
+/** Doctor overview data: profile plus the doctor's appointment inbox. */
+export async function getDoctorDashboardPage() {
+  const [dashboard, appointments] = await Promise.all([
+    getDoctorDashboard(),
+    getDoctorInbox(),
+  ]);
+  return { ...dashboard, appointments };
 }

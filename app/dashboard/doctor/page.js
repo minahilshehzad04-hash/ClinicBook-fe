@@ -7,18 +7,35 @@ import { PageLoader } from "@/components/Loader";
 import ProfileSummary from "@/components/Dashboard/ProfileSummary";
 import SectionCard from "@/components/Dashboard/SectionCard";
 import StatCard from "@/components/Dashboard/StatCard";
-import { getDoctorDashboard } from "@/app/lib/api";
+import { AppointmentRow, isToday, titleCase } from "@/components/Dashboard/AppointmentUI";
+import { getDoctorDashboardPage } from "@/app/lib/api";
 import { useDashboard } from "@/app/lib/useDashboard";
 
 // /dashboard/doctor
 export default function DoctorDashboardPage() {
-  const { data, error, handleLogout } = useDashboard(getDoctorDashboard, "doctor");
+  const { data, error, handleLogout } = useDashboard(getDoctorDashboardPage, "doctor");
 
   if (error) return <DashboardError error={error} onLogout={handleLogout} />;
   if (!data) return <PageLoader label="Loading your dashboard..." />;
 
   const doctor = data.doctor;
   const profile = data.profile;
+  const appointments = data.appointments ?? [];
+  const todayAppointments = appointments
+    .filter((appointment) =>
+      isToday(appointment.start) && !["rejected", "cancelled"].includes(appointment.status)
+    )
+    .sort((a, b) => new Date(a.start) - new Date(b.start));
+  const patients = [...appointments]
+    .sort((a, b) => new Date(b.start) - new Date(a.start))
+    .filter((appointment, index, sorted) =>
+      sorted.findIndex((candidate) =>
+        appointment.patient_id != null && candidate.patient_id != null
+          ? candidate.patient_id === appointment.patient_id
+          : candidate.patient_name === appointment.patient_name
+      ) === index
+    );
+  const pendingRequests = appointments.filter((appointment) => appointment.status === "pending");
 
   return (
     <DashboardShell
@@ -28,13 +45,55 @@ export default function DoctorDashboardPage() {
       onLogout={handleLogout}
     >
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Today's appointments" value={0} />
-        <StatCard label="Total patients" value={0} />
-        <StatCard label="Pending requests" value={0} />
+        <StatCard label="Today's appointments" value={todayAppointments.length} />
+        <StatCard label="Total patients" value={patients.length} />
+        <StatCard label="Pending requests" value={pendingRequests.length} />
       </div>
 
-      <SectionCard title="Today's appointments" emptyText="No appointments today." />
-      <SectionCard title="Patients" emptyText="Your patients will appear here." />
+      <SectionCard
+        title="Today's appointments"
+        action={
+          <Link href="/dashboard/doctor/appointments" className="text-sm font-medium text-teal-800 hover:text-teal-950">
+            View all
+          </Link>
+        }
+        emptyText="No appointments today."
+      >
+        {todayAppointments.length > 0 && (
+          <ul className="grid gap-3">
+            {todayAppointments.map((appointment) => (
+              <AppointmentRow
+                key={appointment.id}
+                a={appointment}
+                name={appointment.patient_name || "Patient"}
+                hint={appointment.status === "pending" ? "Appointment request" : "Scheduled for today"}
+              />
+            ))}
+          </ul>
+        )}
+      </SectionCard>
+      <SectionCard
+        title="Patients"
+        action={
+          <Link href="/dashboard/doctor/appointments" className="text-sm font-medium text-teal-800 hover:text-teal-950">
+            View appointments
+          </Link>
+        }
+        emptyText="Your patients will appear here."
+      >
+        {patients.length > 0 && (
+          <ul className="grid gap-3">
+            {patients.slice(0, 5).map((appointment) => (
+              <AppointmentRow
+                key={appointment.patient_id ?? appointment.patient_name}
+                a={appointment}
+                name={titleCase(appointment.patient_name || "Patient")}
+                hint="Most recent appointment"
+              />
+            ))}
+          </ul>
+        )}
+      </SectionCard>
 
       <section className="rounded-3xl border border-slate-200 bg-white p-6">
         <div className="flex items-center justify-between">
